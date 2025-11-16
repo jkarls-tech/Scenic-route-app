@@ -30,43 +30,44 @@ self.addEventListener('install', (event: any) => {
 });
 
 self.addEventListener('fetch', (event: any) => {
-  event.respondWith(
-    caches.match(event.request)
-      .then((response) => {
-        // Cache hit - return response
-        if (response) {
-          return response;
-        }
+  const requestUrl = new URL(event.request.url);
 
-        // Clone the request because it's a stream and can only be consumed once.
-        const fetchRequest = event.request.clone();
+  // We only want to apply caching logic to our own app files, from our own origin.
+  const isAppFile = requestUrl.origin === self.location.origin &&
+                    (urlsToCache.includes(requestUrl.pathname) || requestUrl.pathname === '/');
 
-        return fetch(fetchRequest).then(
-          (response) => {
-            // Check if we received a valid response
-            if (!response || response.status !== 200 || response.type !== 'basic') {
-              if(!event.request.url.startsWith('https://aistudiocdn.com')) {
-                 return response;
-              }
-            }
-
-            // Clone the response because it's also a stream.
-            const responseToCache = response.clone();
-
-            caches.open(CACHE_NAME)
-              .then((cache) => {
-                // We don't cache CDN resources to avoid issues, only our app files.
-                if (urlsToCache.includes(new URL(event.request.url).pathname) || event.request.url.endsWith('/')) {
-                   cache.put(event.request, responseToCache);
-                }
-              });
-
-            return response;
+  if (isAppFile) {
+    // For our app files, use a "cache, then network" (cache-first) strategy.
+    event.respondWith(
+      caches.match(event.request)
+        .then((cachedResponse) => {
+          // Return from cache if available.
+          if (cachedResponse) {
+            return cachedResponse;
           }
-        );
-      })
-  );
+          // Otherwise, fetch from the network.
+          return fetch(event.request).then((networkResponse) => {
+            // And cache the new version for next time.
+            // Check for a valid response before caching.
+            if (networkResponse && networkResponse.status === 200) {
+              const responseToCache = networkResponse.clone();
+              caches.open(CACHE_NAME)
+                .then((cache) => {
+                  cache.put(event.request, responseToCache);
+                });
+            }
+            return networkResponse;
+          });
+        })
+    );
+  } else {
+    // For all other requests (CDNs, APIs, platform scripts),
+    // let the browser handle it by not calling event.respondWith().
+    // This ensures we don't interfere with them.
+    return;
+  }
 });
+
 
 self.addEventListener('activate', (event: any) => {
   const cacheWhitelist = [CACHE_NAME];

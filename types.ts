@@ -41,17 +41,3 @@ export interface RoadResult {
 export type LocationQuery =
   | { type: 'coords'; lat: number; lon: number }
   | { type: 'address'; address: string };
-
-// Add global types for the aistudio environment
-// FIX: Define an AIStudio interface to resolve conflict with other global declarations.
-// FIX: Removed 'export' to avoid conflicts with other global declarations of 'aistudio'.
-interface AIStudio {
-  hasSelectedApiKey: () => Promise<boolean>;
-  openSelectKey: () => Promise<void>;
-}
-
-declare global {
-  interface Window {
-    aistudio: AIStudio;
-  }
-}
