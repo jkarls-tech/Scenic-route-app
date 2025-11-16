@@ -2,10 +2,6 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { RoadResult, GroundingChunk, LocationQuery, Road } from '../types';
 
 export async function findDrivingRoads(query: LocationQuery): Promise<RoadResult> {
-  if (!process.env.API_KEY) {
-    throw new Error("API_KEY environment variable not set");
-  }
-
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   const locationPrompt = query.type === 'coords'
