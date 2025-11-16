@@ -1,0 +1,8 @@
+
+{
+  "name": "Scenic Route Finder",
+  "description": "An application that uses your location to find the best driving roads nearby, leveraging Google Search and Maps for up-to-date and accurate recommendations.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
